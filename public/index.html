@@ -1,59 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WebRTC Video Chat</title>
-  <style>
-    body {
-  font-family: sans-serif;
-  text-align: center;
-  background: #f0f0f0;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اتصالات الفيديو العشوائية</title>
+    <style>
+      * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
 }
 
-.videos {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
+body {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.video-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
 }
 
 video {
-  width: 320px;
-  height: 240px;
-  background: black;
-  border: 2px solid #ccc;
+    background-color: #000;
+    border-radius: 8px;
+    max-width: 100%;
+    height: auto;
+    max-height: 400px;
+}
+
+#localVideo {
+    transform: scaleX(-1); /* Flip for mirror effect */
 }
 
 .controls {
-  margin-top: 20px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-id {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.user-id p {
+    font-weight: bold;
 }
 
 button {
-  padding: 10px 20px;
-  margin: 5px;
-  font-size: 16px;
-  cursor: pointer;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
 }
 
-  </style>
+button:hover {
+    background-color: #2980b9;
+}
+
+.connection-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.direct-connect {
+    display: flex;
+    gap: 10px;
+}
+
+.direct-connect input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.call-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.call-controls button {
+    padding: 12px 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+#endCall {
+    background-color: #e74c3c;
+}
+
+#endCall:hover {
+    background-color: #c0392b;
+}
+
+@media (max-width: 768px) {
+    .video-container {
+        flex-direction: column;
+    }
+    
+    .direct-connect {
+        flex-direction: column;
+    }
+}
+    </style>
 </head>
 <body>
-  <h1>WebRTC Video Chat</h1>
+    <div class="container">
+        <header>
+            <h1>مرحبًا في موقع اتصالات الفيديو</h1>
+            <p>تواصل مع أشخاص عشوائيين أو اتصل بأصدقائك باستخدام المعرف</p>
+        </header>
 
-  <p>Your ID: <span id="myId">Connecting...</span></p>
+        <div class="main-content">
+            <div class="video-container">
+                <video id="localVideo" autoplay muted></video>
+                <video id="remoteVideo" autoplay></video>
+            </div>
 
-  <div class="videos">
-    <video id="localVideo" autoplay playsinline muted></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-  </div>
+            <div class="controls">
+                <div class="user-id">
+                    <p>معرفك: <span id="userId"></span></p>
+                    <button id="copyId">نسخ المعرف</button>
+                </div>
 
-  <div class="controls">
-    <button id="muteBtn">Mute</button>
-    <button id="endCallBtn">End Call</button>
-  </div>
+                <div class="connection-options">
+                    <button id="randomConnect">اتصال عشوائي</button>
+                    <div class="direct-connect">
+                        <input type="text" id="targetId" placeholder="أدخل المعرف هنا">
+                        <button id="directConnect">اتصال مباشر</button>
+                    </div>
+                </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+                <div class="call-controls hidden">
+                    <button id="endCall">إنهاء المكالمة</button>
+                    <button id="toggleVideo">إيقاف الفيديو</button>
+                    <button id="toggleAudio">إيقاف الصوت</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
