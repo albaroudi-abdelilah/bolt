@@ -1,118 +1,68 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-
 const app = express();
-app.use(cors());
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
 
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
+app.use(express.static('public'));
 
-// Store connected users
-const users = new Map();
-// Store random call queue
-const callQueue = [];
+let users = {};
+let sockets = {};
 
 io.on('connection', (socket) => {
-    console.log('New client connected:', socket.id);
+  console.log('New connection');
 
-    // Handle user registration
-    socket.on('register', (userId) => {
-        users.set(userId, socket.id);
-        socket.userId = userId;
-        console.log(`User registered: ${userId}`);
-    });
+  socket.on('join', (username) => {
+    users[socket.id] = username;
+    sockets[username] = socket.id;
+    io.emit('user-joined', username);
+  });
 
-    // Handle random call request
-    socket.on('randomCall', (userId) => {
-        if (callQueue.length > 0) {
-            // Pair with someone in the queue
-            const otherUserId = callQueue.pop();
-            const otherSocketId = users.get(otherUserId);
-            
-            if (otherSocketId && io.sockets.sockets.get(otherSocketId)) {
-                // Notify both users
-                io.to(otherSocketId).emit('callRequest', {
-                    from: userId,
-                    to: otherUserId,
-                    offer: null // They will create their own offer
-                });
-                
-                io.to(socket.id).emit('callRequest', {
-                    from: otherUserId,
-                    to: userId,
-                    offer: null
-                });
-            } else {
-                // Other user disconnected, add to queue
-                callQueue.push(userId);
-            }
-        } else {
-            // Add to queue
-            callQueue.push(userId);
-        }
-    });
+  socket.on('call', (targetUsername) => {
+    const targetSocketId = sockets[targetUsername];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call', users[socket.id]);
+    }
+  });
 
-    // Handle direct call request
-    socket.on('callRequest', (data) => {
-        const targetSocketId = users.get(data.to);
-        
-        if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
-            io.to(targetSocketId).emit('callRequest', data);
-        } else {
-            io.to(socket.id).emit('userNotFound');
-        }
-    });
+  socket.on('accept-call', (callerUsername) => {
+    const callerSocketId = sockets[callerUsername];
+    if (callerSocketId) {
+      io.to(callerSocketId).emit('call-accepted', users[socket.id]);
+    }
+  });
 
-    // Handle call response
-    socket.on('callResponse', (data) => {
-        const targetSocketId = users.get(data.to);
-        
-        if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
-            io.to(targetSocketId).emit('callResponse', data);
-        }
-    });
+  socket.on('offer', (offer, targetUsername) => {
+    const targetSocketId = sockets[targetUsername];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('offer', offer, users[socket.id]);
+    }
+  });
 
-    // Handle ICE candidates
-    socket.on('iceCandidate', (data) => {
-        const targetSocketId = users.get(data.to);
-        
-        if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
-            io.to(targetSocketId).emit('iceCandidate', data);
-        }
-    });
+  socket.on('answer', (answer, targetUsername) => {
+    const targetSocketId = sockets[targetUsername];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('answer', answer);
+    }
+  });
 
-    // Handle end call
-    socket.on('endCall', (data) => {
-        const targetSocketId = users.get(data.to);
-        
-        if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
-            io.to(targetSocketId).emit('endCall');
-        }
-    });
+  socket.on('ice-candidate', (candidate, targetUsername) => {
+    const targetSocketId = sockets[targetUsername];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('ice-candidate', candidate);
+    }
+  });
 
-    // Handle disconnection
-    socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-        if (socket.userId) {
-            users.delete(socket.userId);
-            
-            // Remove from call queue if present
-            const index = callQueue.indexOf(socket.userId);
-            if (index !== -1) {
-                callQueue.splice(index, 1);
-            }
-        }
-    });
+  socket.on('disconnect', () => {
+    delete users[socket.id];
+    for (let username in sockets) {
+      if (sockets[username] === socket.id) {
+        delete sockets[username];
+      }
+    }
+    io.emit('user-left', socket.id);
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+server.listen(3000, () => {
+  console.log('Server listening on port 3000');
 });
