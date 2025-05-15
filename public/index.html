@@ -2,30 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Video Call</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/socket.io/socket.io.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WebRTC Video Chat</title>
+  <style>
+    body {
+  font-family: sans-serif;
+  text-align: center;
+  background: #f0f0f0;
+}
+
+.videos {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+video {
+  width: 320px;
+  height: 240px;
+  background: black;
+  border: 2px solid #ccc;
+}
+
+.controls {
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+  </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
-<div class="p-4">
-  <h2 class="text-xl font-bold">معرّفك (ID):</h2>
-  <p id="user-id" class="text-green-600 font-mono"></p>
-</div>
-  <div class="mb-4">
-    <input id="other-user-id" type="text" placeholder="Enter User ID" class="border p-2 rounded" />
-    <button id="call" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Call</button>
+<body>
+  <h1>WebRTC Video Chat</h1>
+
+  <p>Your ID: <span id="myId">Connecting...</span></p>
+
+  <div class="videos">
+    <video id="localVideo" autoplay playsinline muted></video>
+    <video id="remoteVideo" autoplay playsinline></video>
   </div>
 
-  <div class="flex space-x-4">
-    <video id="local-video" autoplay playsinline muted class="w-64 h-48 bg-black"></video>
-    <video id="remote-video" autoplay playsinline class="w-64 h-48 bg-black"></video>
+  <div class="controls">
+    <button id="muteBtn">Mute</button>
+    <button id="endCallBtn">End Call</button>
   </div>
 
-  <div class="mt-4 flex space-x-2">
-    <button id="mute-btn" class="bg-yellow-400 px-4 py-2 rounded">Mute</button>
-    <button id="end-btn" class="bg-red-500 text-white px-4 py-2 rounded">End Call</button>
-  </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
