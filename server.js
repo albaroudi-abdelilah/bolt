@@ -1,19 +1,27 @@
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io");
 const path = require("path");
-const users = []; 
+
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = new Server(server);
 
+const PORT = process.env.PORT || 3000;
+
+// مجلد الملفات الثابتة (frontend files)
 app.use(express.static(path.join(__dirname, "public")));
 
+let users = [];
+
 io.on("connection", (socket) => {
-  console.log("User connected: " + socket.id);
+  console.log(`🔌 User connected: ${socket.id}`);
   users.push(socket.id);
 
-  socket.emit("your-id", socket.id);
+  // إرسال قائمة المستخدمين للعميل (اختياري)
+  io.emit("users", users);
+
+  // استقبال طلب اتصال
   socket.on("call-user", (data) => {
     io.to(data.to).emit("receive-call", {
       from: socket.id,
@@ -21,29 +29,28 @@ io.on("connection", (socket) => {
     });
   });
 
+  // استقبال رد الاتصال
   socket.on("answer-call", (data) => {
     io.to(data.to).emit("call-answered", {
       answer: data.answer,
     });
   });
 
+  // استقبال مرشحات ICE
   socket.on("ice-candidate", (data) => {
     io.to(data.to).emit("ice-candidate", {
       candidate: data.candidate,
     });
   });
 
-  socket.on("end-call", (data) => {
-    io.to(data.to).emit("call-ended");
-  });
-
+  // قطع الاتصال
   socket.on("disconnect", () => {
-    console.log("User disconnected: " + socket.id);
+    console.log(`❌ User disconnected: ${socket.id}`);
+    users = users.filter((id) => id !== socket.id);
+    io.emit("users", users);
   });
 });
 
-const PORT = process.env.PORT || 3000; // استخدام PORT من البيئة
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
