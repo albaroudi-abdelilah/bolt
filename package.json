@@ -1,26 +1,27 @@
 {
   "name": "video-chat-app",
   "version": "1.0.0",
-  "description": "A random and direct video chat application using WebRTC",
+  "description": "تطبيق دردشة فيديو مع خيارات اتصال عشوائي أو محدد",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js"
   },
   "keywords": [
+    "video",
+    "chat",
     "webrtc",
-    "videochat",
-    "nodejs",
-    "socket.io"
+    "socket.io",
+    "peerjs"
   ],
-  "author": "abdelilah",
+  "author": "",
   "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "socket.io": "^4.5.4"
+    "peer": "^1.0.1",
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^3.0.1"
   }
 }
