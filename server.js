@@ -1,48 +1,32 @@
 const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
-const path = require("path");
-const users = []; 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
 
-app.use(express.static(path.join(__dirname, "public")));
+const port = process.env.PORT || 3000;
+
+app.use(express.static("public"));
 
 io.on("connection", (socket) => {
-  console.log("User connected: " + socket.id);
-  users.push(socket.id);
+  console.log("User connected:", socket.id);
 
-  socket.emit("your-id", socket.id);
-  socket.on("call-user", (data) => {
-    io.to(data.to).emit("receive-call", {
-      from: socket.id,
-      offer: data.offer,
-    });
+  socket.on("offer", (data) => {
+    socket.broadcast.emit("offer", data);
   });
 
-  socket.on("answer-call", (data) => {
-    io.to(data.to).emit("call-answered", {
-      answer: data.answer,
-    });
+  socket.on("answer", (data) => {
+    socket.broadcast.emit("answer", data);
   });
 
   socket.on("ice-candidate", (data) => {
-    io.to(data.to).emit("ice-candidate", {
-      candidate: data.candidate,
-    });
-  });
-
-  socket.on("end-call", (data) => {
-    io.to(data.to).emit("call-ended");
+    socket.broadcast.emit("ice-candidate", data);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected: " + socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+http.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
 });
