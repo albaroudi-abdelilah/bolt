@@ -1,7 +1,6 @@
 {
   "name": "webrtc-app",
   "version": "1.0.0",
-  "description": "WebRTC App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
