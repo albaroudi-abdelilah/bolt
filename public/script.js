@@ -1,96 +1,92 @@
 const socket = io();
-const localVideo = document.getElementById("local-video");
-const remoteVideo = document.getElementById("remote-video");
-const callButton = document.getElementById("call");
-const endCallButton = document.getElementById("end-btn");
-const muteButton = document.getElementById("mute-btn");
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const muteBtn = document.getElementById("muteBtn");
+const endCallBtn = document.getElementById("endCallBtn");
+const myIdSpan = document.getElementById("myId");
 
-let localStream, peerConnection;
+let localStream;
 let isMuted = false;
 
-const servers = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-};
+const peerConnection = new RTCPeerConnection({
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+});
 
+// Get media stream
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then((stream) => {
     localStream = stream;
     localVideo.srcObject = stream;
+
+    stream.getTracks().forEach((track) => {
+      peerConnection.addTrack(track, stream);
+    });
   });
 
-callButton.onclick = () => {
-  const userId = document.getElementById("other-user-id").value;
-  peerConnection = createPeerConnection(userId);
+peerConnection.ontrack = (event) => {
+  remoteVideo.srcObject = event.streams[0];
+};
 
-  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+peerConnection.onicecandidate = (event) => {
+  if (event.candidate) {
+    socket.emit("ice-candidate", event.candidate);
+  }
+};
 
+// Socket events
+socket.on("connect", () => {
+  myIdSpan.textContent = socket.id;
+
+  // Send offer if first to connect
   peerConnection.createOffer()
     .then((offer) => {
-      peerConnection.setLocalDescription(offer);
-      socket.emit("call-user", { to: userId, offer });
+      return peerConnection.setLocalDescription(offer);
+    })
+    .then(() => {
+      socket.emit("offer", peerConnection.localDescription);
     });
-};
-
-muteButton.onclick = () => {
-  isMuted = !isMuted;
-  localStream.getAudioTracks()[0].enabled = !isMuted;
-  muteButton.innerText = isMuted ? "Unmute" : "Mute";
-};
-socket.on("your-id", (id) => {
-  document.getElementById("user-id").textContent = id;
 });
 
-endCallButton.onclick = () => {
-  const userId = document.getElementById("other-user-id").value;
-  socket.emit("end-call", { to: userId });
-  closeCall();
-};
-
-socket.on("receive-call", async ({ from, offer }) => {
-  peerConnection = createPeerConnection(from);
-
-  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+socket.on("offer", async (offer) => {
   await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
-
-  socket.emit("answer-call", { to: from, answer });
+  socket.emit("answer", answer);
 });
 
-socket.on("call-answered", async ({ answer }) => {
+socket.on("answer", async (answer) => {
   await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 });
 
-socket.on("ice-candidate", ({ candidate }) => {
-  peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-});
-
-socket.on("call-ended", () => {
-  closeCall();
-  alert("Call ended by other user.");
-});
-
-function createPeerConnection(to) {
-  const pc = new RTCPeerConnection(servers);
-
-  pc.onicecandidate = (e) => {
-    if (e.candidate) {
-      socket.emit("ice-candidate", { to, candidate: e.candidate });
-    }
-  };
-
-  pc.ontrack = (e) => {
-    remoteVideo.srcObject = e.streams[0];
-  };
-
-  return pc;
-}
-
-function closeCall() {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
+socket.on("ice-candidate", async (candidate) => {
+  try {
+    await peerConnection.addIceCandidate(candidate);
+  } catch (e) {
+    console.error("Error adding ice candidate", e);
   }
+});
+
+// Buttons
+muteBtn.addEventListener("click", () => {
+  if (!localStream) return;
+
+  isMuted = !isMuted;
+  localStream.getAudioTracks().forEach(track => {
+    track.enabled = !isMuted;
+  });
+
+  muteBtn.textContent = isMuted ? "Unmute" : "Mute";
+});
+
+endCallBtn.addEventListener("click", () => {
+  // Close connection
+  peerConnection.close();
+  localStream.getTracks().forEach(track => track.stop());
+
+  // Clear video
+  localVideo.srcObject = null;
   remoteVideo.srcObject = null;
-}
+
+  // Reload page (simple reset)
+  location.reload();
+});
