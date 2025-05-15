@@ -20,7 +20,8 @@ const io = new Server(server, {
 // إعداد خادم PeerJS
 const peerServer = ExpressPeerServer(server, {
     debug: true,
-    path: '/peerjs'
+    path: '/peerjs',
+    ssl: {} // إضافة SSL للدعم HTTPS
 });
 
 // استخدام خادم PeerJS كـ middleware
