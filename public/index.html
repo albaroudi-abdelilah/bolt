@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Video Call</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
+<div class="p-4">
+  <h2 class="text-xl font-bold">معرّفك (ID):</h2>
+  <p id="user-id" class="text-green-600 font-mono"></p>
+</div>
+  <div class="mb-4">
+    <input id="other-user-id" type="text" placeholder="Enter User ID" class="border p-2 rounded" />
+    <button id="call" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Call</button>
+  </div>
+
+  <div class="flex space-x-4">
+    <video id="local-video" autoplay playsinline muted class="w-64 h-48 bg-black"></video>
+    <video id="remote-video" autoplay playsinline class="w-64 h-48 bg-black"></video>
+  </div>
+
+  <div class="mt-4 flex space-x-2">
+    <button id="mute-btn" class="bg-yellow-400 px-4 py-2 rounded">Mute</button>
+    <button id="end-btn" class="bg-red-500 text-white px-4 py-2 rounded">End Call</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
