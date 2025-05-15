@@ -314,12 +314,12 @@
             const initConnection = async () => {
                 try {
                     // اتصال بخادم Socket.IO
-                    socket = io('http://localhost:3000');
+                    socket = io('https://bolt-production-6f3d.up.railway.app');
                     
                     // إنشاء اتصال PeerJS
                     peer = new Peer(undefined, {
                         host: 'bolt-production-6f3d.up.railway.app',
-                        port: 3000,
+                        secure: true, // استخدام HTTPS
                         path: '/peerjs'
                     });
 
